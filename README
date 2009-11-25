@@ -8,3 +8,7 @@ roleplaying game.
 Installation
 ------------
 There's no files yet, so this is not something to worry about.
+
+I write in python 2.6, but include compatibility patches for 2.5.
+
+Python 3 code should be forked.
