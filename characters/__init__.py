@@ -1,6 +1,9 @@
 import math
 
-from util import *
+from enquisitor.util import *
+
+def _round(n):
+    return int(round(n))
 
 __all__ = ["Character"]
 
@@ -9,30 +12,20 @@ class Character(object):
         if "archetype" in kwargs:
             kwargs["archetype"].generate(self)
         else:
-            for stat in {"T":0, "I":0, "WP":0, "Sg":0, "Nv":0, "Ld":0, "abilities":[], "equipment"=[]]: 
-            setattr(self, stat, kwargs.get(stat, 0))
+            for stat, defval in {"T":0, "I":0, "WP":0, "Sg":0, "Nv":0, "Ld":0, "abilities":[], "equipment":[]}.iteritems(): 
+                setattr(self, stat, kwargs.get(stat, defval))
         self.speedMods = 0
         self.movementMods = []
         self.injuryTotal = 0
         WS, BS, S = kwargs.get("WS", 0), kwargs.get("BS", 0), kwargs.get("S", 0)
-        self.weaponSkill = {"left": math.ceil(WS/2.), "right": math.ceil(WS/2.)}
-        self.balisticSkill = {"left": math.ceil(BS/2.), "right": math.ceil(BS/2.)}
-        self.strength = {"left": math.ceil(S/2), "right": math.ceil(S/2)}
+        self.weaponSkill = {"left": (WS/2.), "right": (WS/2.)}
+        self.WS = perSide(self.weaponSkill)
+        self.balisticSkill = {"left": (BS/2.), "right": (BS/2.)}
+        self.BS = perSide(self.balisticSkill)
+        self.strength = {"left": (S/2.), "right": (S/2.)}
+        self.S = perSide(self.strength)
         
         self.locations = HumanoidLocations(self)
-
-
-    @property
-    def WS(self):
-        return sum(self.weaponSkill.itervalues())
-
-    @property
-    def BS(self):
-        return sum(self.balisticSkill.itervalues())
-
-    @property
-    def S(self):
-        return sum(self.strength.itervalues())
 
     @property
     def systemShockValue(self):
@@ -54,7 +47,33 @@ class Character(object):
     def speed(self,value):
         self.speedMods = value - self.speed
 
-
+class perSide(object):
+    def __init__(self, vals):
+        self.vals = vals
+    def __call__(self):
+        return _round(sum(self.vals.itervalues()))
+    def __getitem__(self, index):
+        return _round(self.vals[index])
+    def __repr__(self):
+        return str(self())
+    def __add__(self, val):
+        return self() + val
+    __radd__ = __add__
+    def __mul__(self, val):
+        return self() * val
+    __rmul__ = __mul__
+    def __div__(self, val):
+        return self() / val
+    def __rdiv__(self, val):
+        return val/self()
+    def __sub__(self, val):
+        return self() - val
+    def __rsub__(self, val):
+        return val - self()
+    def __cmp__(self, val):
+        return cmp(self(), val)
+    def __int__(self):
+        return self()
 class Locations(object):
     def __init__(self,character):
         self.character = character    
@@ -76,28 +95,28 @@ class HumanoidLocations(Locations):
                           (16, Leg(character, "left")),
                           (1, Leg(character, "right")))
 
-class Location(Object):
+class Location(object):
     def __init__(self, character):
         self.character = character
         self.armour = 0
-        self.nextInjury = doLight
+        self.nextInjury = self.doLight
         self.bleeding = False
 
     def doLight(self):
         self.lightEffect()
-        self.nextInjury = doHeavy
+        self.nextInjury = self.doHeavy
 
     def doHeavy(self):
         self.heavyEffect()
-        self.nextInjury = doSerious
+        self.nextInjury = self.doSerious
 
     def doSerious(self):
         self.seriousEffect()
-        self.nextInjury = doAcute
+        self.nextInjury = self.doAcute
 
     def doAcute(self):
         self.acuteEffect()
-        self.nextInjury = doCrippled
+        self.nextInjury = self.doCrippled
 
     def doCrippled(self):
         self.crippledEffect()
@@ -127,7 +146,7 @@ class Head(Location):
 
     def doHeavy(self):
         self.heavyEffect()
-        self.nextInjury = doAcute
+        self.nextInjury = self.doAcute
 
     def heavyEffect(self):
         self.lightEffect()
@@ -187,7 +206,7 @@ class Groin(Location):
 
     def doHeavy(self):
         self.heavyEffect()
-        self.nextInjury = doAcute
+        self.nextInjury = self.doAcute
 
     def heavyEffect(self):
         self.lightEffect()
